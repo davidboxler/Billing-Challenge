@@ -1,0 +1,163 @@
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, ILike, IsNull } from 'typeorm';
+import { Order, OrderStatus, InvoiceStatus } from './entities/order.entity';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
+import { QueryOrdersDto } from './dto/query-orders.dto';
+
+@Injectable()
+export class OrdersService {
+  constructor(
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
+  ) {}
+
+  async create(createOrderDto: CreateOrderDto): Promise<Order> {
+    await this.validateUniqueTrackingCode(createOrderDto.trackingCode);
+
+    const order = this.orderRepository.create(createOrderDto);
+    return this.orderRepository.save(order);
+  }
+
+  async findAll(queryDto: QueryOrdersDto) {
+    const {
+      customerName,
+      trackingCode,
+      status,
+      invoiceStatus,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    } = queryDto;
+
+    const query = this.orderRepository.createQueryBuilder('order');
+
+    query.where('order.deletedAt IS NULL');
+
+    if (customerName) {
+      query.andWhere('order.customerName ILIKE :customerName', {
+        customerName: `%${customerName}%`,
+      });
+    }
+
+    if (trackingCode) {
+      query.andWhere('order.trackingCode ILIKE :trackingCode', {
+        trackingCode: `%${trackingCode}%`,
+      });
+    }
+
+    if (status) {
+      query.andWhere('order.status = :status', { status });
+    }
+
+    if (invoiceStatus) {
+      query.andWhere('order.invoiceStatus = :invoiceStatus', {
+        invoiceStatus,
+      });
+    }
+
+    query.orderBy(`order.${sortBy}`, sortOrder);
+
+    const pageValue = page || 1;
+    const limitValue = limit || 10;
+
+    query.skip((pageValue - 1) * limitValue);
+    query.take(limitValue);
+
+    const [data, total] = await query.getManyAndCount();
+
+    return {
+      data,
+      total,
+      page: pageValue,
+      limit: limitValue,
+      totalPages: Math.ceil(total / limitValue),
+    };
+  }
+
+  async findOne(id: number): Promise<Order> {
+    const order = await this.orderRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${id} not found`);
+    }
+
+    return order;
+  }
+
+  async update(id: number, updateOrderDto: UpdateOrderDto): Promise<Order> {
+    const order = await this.findOne(id);
+
+    if (updateOrderDto.trackingCode && updateOrderDto.trackingCode !== order.trackingCode) {
+      await this.validateUniqueTrackingCode(updateOrderDto.trackingCode, id);
+    }
+
+    if (updateOrderDto.invoiceStatus) {
+      this.validateInvoiceStatusTransition(
+        order.invoiceStatus,
+        updateOrderDto.invoiceStatus,
+      );
+    }
+
+    Object.assign(order, updateOrderDto);
+    return this.orderRepository.save(order);
+  }
+
+  async remove(id: number): Promise<void> {
+    const order = await this.findOne(id);
+
+    if (order.deletedAt) {
+      return;
+    }
+
+    order.deletedAt = new Date();
+    order.status = OrderStatus.INACTIVE;
+    await this.orderRepository.save(order);
+  }
+
+  private async validateUniqueTrackingCode(
+    trackingCode: string,
+    excludeId?: number,
+  ): Promise<void> {
+    const query = this.orderRepository.createQueryBuilder('order');
+
+    query.where('order.trackingCode = :trackingCode', { trackingCode });
+    query.andWhere('order.status = :status', { status: OrderStatus.ACTIVE });
+    query.andWhere('order.deletedAt IS NULL');
+
+    if (excludeId) {
+      query.andWhere('order.id != :excludeId', { excludeId });
+    }
+
+    const existingOrder = await query.getOne();
+
+    if (existingOrder) {
+      throw new ConflictException(
+        `Tracking code '${trackingCode}' is already in use by an active order`,
+      );
+    }
+  }
+
+  private validateInvoiceStatusTransition(
+    currentStatus: InvoiceStatus,
+    newStatus: InvoiceStatus,
+  ): void {
+    if (
+      currentStatus === InvoiceStatus.INVOICED &&
+      newStatus === InvoiceStatus.PENDING
+    ) {
+      throw new BadRequestException(
+        'Cannot revert invoice status from INVOICED to PENDING',
+      );
+    }
+  }
+}
