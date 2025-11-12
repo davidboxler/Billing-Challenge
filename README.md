@@ -66,3 +66,25 @@ cd api-gateway && npm run start:dev
 ## Variables de Entorno
 
 Cada servicio tiene su archivo `.env` con la configuración correspondiente.
+
+## Workflow de Desarrollo
+
+El proyecto usa GitFlow:
+
+- **master**: Rama principal de producción
+- **develop**: Rama de desarrollo activo
+- **feature/\***: Ramas para nuevas funcionalidades
+
+### Flujo de trabajo:
+
+1. Crear feature branch desde develop:
+```bash
+git checkout develop
+git pull origin develop
+git checkout -b feature/nombre-funcionalidad
+```
+
+2. Hacer cambios y commits
+3. Push de la feature branch
+4. Crear Pull Request a develop
+5. Review y merge
