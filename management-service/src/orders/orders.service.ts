@@ -5,17 +5,23 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, IsNull } from 'typeorm';
+import { Repository, ILike, IsNull, In } from 'typeorm';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
+import { firstValueFrom } from 'rxjs';
 import { Order, OrderStatus, InvoiceStatus } from './entities/order.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
+import { InvoiceOrdersDto } from './dto/invoice-orders.dto';
 
 @Injectable()
 export class OrdersService {
   constructor(
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto): Promise<Order> {
@@ -177,6 +183,79 @@ export class OrdersService {
     ) {
       throw new BadRequestException(
         'Cannot revert invoice status from INVOICED to PENDING',
+      );
+    }
+  }
+
+  async invoiceOrders(invoiceOrdersDto: InvoiceOrdersDto) {
+    const { orderIds } = invoiceOrdersDto;
+
+    // Find all orders by IDs
+    const orders = await this.orderRepository.find({
+      where: {
+        id: In(orderIds),
+        deletedAt: IsNull(),
+      },
+    });
+
+    // Validate that all orders exist
+    if (orders.length !== orderIds.length) {
+      const foundIds = orders.map((order) => order.id);
+      const missingIds = orderIds.filter((id) => !foundIds.includes(id));
+      throw new NotFoundException(
+        `Orders with IDs ${missingIds.join(', ')} not found`,
+      );
+    }
+
+    // Validate that all orders are ACTIVE and PENDING
+    const invalidOrders = orders.filter(
+      (order) =>
+        order.status !== OrderStatus.ACTIVE ||
+        order.invoiceStatus !== InvoiceStatus.PENDING,
+    );
+
+    if (invalidOrders.length > 0) {
+      const invalidIds = invalidOrders.map((order) => order.id);
+      throw new BadRequestException(
+        `Orders with IDs ${invalidIds.join(', ')} are not eligible for invoicing. They must be ACTIVE and PENDING`,
+      );
+    }
+
+    // Prepare invoice data for Invoice Service
+    const invoiceServiceUrl = this.configService.get<string>(
+      'INVOICE_SERVICE_URL',
+    );
+
+    try {
+      // Create invoices for each order
+      const invoicePromises = orders.map((order) => {
+        const invoiceData = {
+          orderId: order.id,
+          amount: 100.0, // Dummy amount for now
+          issuedDate: new Date().toISOString(),
+        };
+        return firstValueFrom(
+          this.httpService.post(`${invoiceServiceUrl}/invoices`, invoiceData),
+        );
+      });
+
+      // Wait for all invoices to be created
+      const invoiceResponses = await Promise.all(invoicePromises);
+
+      // Update order invoice status to INVOICED
+      await this.orderRepository.update(
+        { id: In(orderIds) },
+        { invoiceStatus: InvoiceStatus.INVOICED },
+      );
+
+      return {
+        message: 'Orders invoiced successfully',
+        invoiceIds: invoiceResponses.map((res) => res.data.id),
+        invoicedOrders: orderIds,
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to create invoice: ${error.response?.data?.message || error.message}`,
       );
     }
   }

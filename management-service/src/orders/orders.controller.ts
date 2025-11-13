@@ -22,6 +22,7 @@ import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
+import { InvoiceOrdersDto } from './dto/invoice-orders.dto';
 
 @ApiTags('orders')
 @Controller('orders')
@@ -125,5 +126,36 @@ export class OrdersController {
   })
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.ordersService.remove(id);
+  }
+
+  @Post('invoice')
+  @ApiOperation({ summary: 'Create invoices for multiple orders' })
+  @ApiBody({ type: InvoiceOrdersDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Orders invoiced successfully',
+    schema: {
+      properties: {
+        message: { type: 'string', example: 'Orders invoiced successfully' },
+        invoiceId: { type: 'number', example: 1 },
+        invoicedOrders: {
+          type: 'array',
+          items: { type: 'number' },
+          example: [1, 2, 3],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Invalid input data, orders not eligible for invoicing, or invoice service error',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'One or more orders not found',
+  })
+  invoice(@Body() invoiceOrdersDto: InvoiceOrdersDto) {
+    return this.ordersService.invoiceOrders(invoiceOrdersDto);
   }
 }
