@@ -27,19 +27,29 @@ export class OrdersService {
 
   async findAll(queryDto: QueryOrdersDto) {
     const {
+      search,
       customerName,
       trackingCode,
       status,
       invoiceStatus,
+      createdFrom,
+      createdTo,
       page,
       limit,
       sortBy,
-      sortOrder,
+      sortDir,
     } = queryDto;
 
     const query = this.orderRepository.createQueryBuilder('order');
 
     query.where('order.deletedAt IS NULL');
+
+    if (search) {
+      query.andWhere(
+        '(order.customerName ILIKE :search OR order.trackingCode ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
 
     if (customerName) {
       query.andWhere('order.customerName ILIKE :customerName', {
@@ -63,7 +73,15 @@ export class OrdersService {
       });
     }
 
-    query.orderBy(`order.${sortBy}`, sortOrder);
+    if (createdFrom) {
+      query.andWhere('order.createdAt >= :createdFrom', { createdFrom });
+    }
+
+    if (createdTo) {
+      query.andWhere('order.createdAt <= :createdTo', { createdTo });
+    }
+
+    query.orderBy(`order.${sortBy}`, sortDir);
 
     const pageValue = page || 1;
     const limitValue = limit || 10;
@@ -71,14 +89,16 @@ export class OrdersService {
     query.skip((pageValue - 1) * limitValue);
     query.take(limitValue);
 
-    const [data, total] = await query.getManyAndCount();
+    const [items, total] = await query.getManyAndCount();
+
+    const hasNext = pageValue * limitValue < total;
 
     return {
-      data,
+      items,
       total,
       page: pageValue,
       limit: limitValue,
-      totalPages: Math.ceil(total / limitValue),
+      hasNext,
     };
   }
 
