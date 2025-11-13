@@ -21,7 +21,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: invoice_db
+      POSTGRES_DB: invoicedb
     ports:
       - "5433:5432"
     volumes:
@@ -65,7 +65,7 @@ services:
       - DB_PORT=5432
       - DB_USER=postgres
       - DB_PASSWORD=postgres
-      - DB_NAME=invoice_db
+      - DB_NAME=invoicedb
     ports:
       - "3002:3002"
     depends_on:
