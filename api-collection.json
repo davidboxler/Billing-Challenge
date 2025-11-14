@@ -1,0 +1,347 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2024-01-15T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.1.0",
+  "resources": [
+    {
+      "_id": "wrk_billing",
+      "_type": "workspace",
+      "name": "Billing Challenge API",
+      "description": "Sistema de Facturación - Microservicios",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3000",
+        "management_url": "http://localhost:3001",
+        "invoice_url": "http://localhost:3002"
+      },
+      "dataPropertyOrder": {
+        "&": ["base_url", "management_url", "invoice_url"]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1
+    },
+    {
+      "_id": "fld_orders",
+      "_type": "request_group",
+      "parentId": "wrk_billing",
+      "name": "Orders (Management Service)",
+      "description": "Gestión de órdenes",
+      "environment": {},
+      "metaSortKey": 1
+    },
+    {
+      "_id": "req_orders_list",
+      "_type": "request",
+      "parentId": "fld_orders",
+      "name": "List Orders (Paginated)",
+      "description": "Listar órdenes con paginación y filtros",
+      "url": "{{ _.base_url }}/orders?page=1&limit=10",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        { "name": "page", "value": "1", "description": "Página actual" },
+        { "name": "limit", "value": "10", "description": "Registros por página" },
+        { "name": "status", "value": "", "description": "ACTIVE | INACTIVE", "disabled": true },
+        { "name": "invoiceStatus", "value": "", "description": "PENDING | INVOICED", "disabled": true },
+        { "name": "search", "value": "", "description": "Búsqueda por nombre o tracking code", "disabled": true },
+        { "name": "sortBy", "value": "createdAt", "description": "Campo para ordenar", "disabled": true },
+        { "name": "sortDir", "value": "DESC", "description": "ASC | DESC", "disabled": true }
+      ],
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 1
+    },
+    {
+      "_id": "req_orders_filter_status",
+      "_type": "request",
+      "parentId": "fld_orders",
+      "name": "List Orders - Filter by Status",
+      "description": "Listar órdenes activas",
+      "url": "{{ _.base_url }}/orders?status=ACTIVE&invoiceStatus=PENDING",
+      "method": "GET",
+      "body": {},
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 2
+    },
+    {
+      "_id": "req_orders_search",
+      "_type": "request",
+      "parentId": "fld_orders",
+      "name": "List Orders - Search",
+      "description": "Buscar órdenes por nombre o tracking code",
+      "url": "{{ _.base_url }}/orders?search=Juan",
+      "method": "GET",
+      "body": {},
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 3
+    },
+    {
+      "_id": "req_orders_get_one",
+      "_type": "request",
+      "parentId": "fld_orders",
+      "name": "Get Order by ID",
+      "description": "Obtener una orden específica",
+      "url": "{{ _.base_url }}/orders/1",
+      "method": "GET",
+      "body": {},
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 4
+    },
+    {
+      "_id": "req_orders_create",
+      "_type": "request",
+      "parentId": "fld_orders",
+      "name": "Create Order",
+      "description": "Crear una nueva orden",
+      "url": "{{ _.base_url }}/orders",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"customerName\": \"Juan Pérez\",\n  \"trackingCode\": \"ORD-2024-100\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 5
+    },
+    {
+      "_id": "req_orders_update",
+      "_type": "request",
+      "parentId": "fld_orders",
+      "name": "Update Order",
+      "description": "Actualizar una orden",
+      "url": "{{ _.base_url }}/orders/1",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"customerName\": \"Juan Pérez Actualizado\",\n  \"status\": \"INACTIVE\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 6
+    },
+    {
+      "_id": "req_orders_delete",
+      "_type": "request",
+      "parentId": "fld_orders",
+      "name": "Delete Order (Soft Delete)",
+      "description": "Eliminar una orden (soft delete)",
+      "url": "{{ _.base_url }}/orders/1",
+      "method": "DELETE",
+      "body": {},
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 7
+    },
+    {
+      "_id": "req_orders_invoice",
+      "_type": "request",
+      "parentId": "fld_orders",
+      "name": "Mark Order as Invoiced",
+      "description": "Marcar orden como facturada y crear factura",
+      "url": "{{ _.base_url }}/orders/1/invoice",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"amount\": 150.50,\n  \"issuedDate\": \"2024-01-15\",\n  \"trackingCode\": \"INV-2024-100\",\n  \"author\": \"María García\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 8
+    },
+    {
+      "_id": "fld_invoices",
+      "_type": "request_group",
+      "parentId": "wrk_billing",
+      "name": "Invoices (Invoice Service)",
+      "description": "Gestión de facturas",
+      "environment": {},
+      "metaSortKey": 2
+    },
+    {
+      "_id": "req_invoices_list",
+      "_type": "request",
+      "parentId": "fld_invoices",
+      "name": "List Invoices (Paginated)",
+      "description": "Listar facturas con paginación y filtros",
+      "url": "{{ _.base_url }}/invoices?page=1&limit=10",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        { "name": "page", "value": "1", "description": "Página actual" },
+        { "name": "limit", "value": "10", "description": "Registros por página" },
+        { "name": "orderId", "value": "", "description": "Filtrar por ID de orden", "disabled": true },
+        { "name": "startDate", "value": "", "description": "Fecha inicio (YYYY-MM-DD)", "disabled": true },
+        { "name": "endDate", "value": "", "description": "Fecha fin (YYYY-MM-DD)", "disabled": true },
+        { "name": "search", "value": "", "description": "Búsqueda por tracking code o autor", "disabled": true },
+        { "name": "sortBy", "value": "createdAt", "description": "Campo para ordenar", "disabled": true },
+        { "name": "sortDir", "value": "DESC", "description": "ASC | DESC", "disabled": true }
+      ],
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 1
+    },
+    {
+      "_id": "req_invoices_filter_order",
+      "_type": "request",
+      "parentId": "fld_invoices",
+      "name": "List Invoices - Filter by Order",
+      "description": "Listar facturas de una orden específica",
+      "url": "{{ _.base_url }}/invoices?orderId=1",
+      "method": "GET",
+      "body": {},
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 2
+    },
+    {
+      "_id": "req_invoices_filter_dates",
+      "_type": "request",
+      "parentId": "fld_invoices",
+      "name": "List Invoices - Filter by Date Range",
+      "description": "Listar facturas en un rango de fechas",
+      "url": "{{ _.base_url }}/invoices?startDate=2024-01-01&endDate=2024-12-31",
+      "method": "GET",
+      "body": {},
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 3
+    },
+    {
+      "_id": "req_invoices_search",
+      "_type": "request",
+      "parentId": "fld_invoices",
+      "name": "List Invoices - Search",
+      "description": "Buscar facturas por autor o tracking code",
+      "url": "{{ _.base_url }}/invoices?search=María",
+      "method": "GET",
+      "body": {},
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 4
+    },
+    {
+      "_id": "req_invoices_get_one",
+      "_type": "request",
+      "parentId": "fld_invoices",
+      "name": "Get Invoice by ID",
+      "description": "Obtener una factura específica",
+      "url": "{{ _.base_url }}/invoices/1",
+      "method": "GET",
+      "body": {},
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 5
+    },
+    {
+      "_id": "req_invoices_create",
+      "_type": "request",
+      "parentId": "fld_invoices",
+      "name": "Create Invoice",
+      "description": "Crear una nueva factura (con idempotencia)",
+      "url": "{{ _.base_url }}/invoices",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"orderId\": 1,\n  \"amount\": 150.50,\n  \"issuedDate\": \"2024-01-15\",\n  \"trackingCode\": \"INV-2024-200\",\n  \"author\": \"María García\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 6
+    },
+    {
+      "_id": "req_invoices_create_idempotent",
+      "_type": "request",
+      "parentId": "fld_invoices",
+      "name": "Create Invoice - Idempotency Test",
+      "description": "Crear factura duplicada (retorna existente)",
+      "url": "{{ _.base_url }}/invoices",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"orderId\": 1,\n  \"amount\": 150.50,\n  \"issuedDate\": \"2024-01-15\",\n  \"trackingCode\": \"INV-2024-200\",\n  \"author\": \"María García\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 7
+    },
+    {
+      "_id": "fld_direct_services",
+      "_type": "request_group",
+      "parentId": "wrk_billing",
+      "name": "Direct Service Access (No Gateway)",
+      "description": "Acceso directo a servicios sin pasar por gateway",
+      "environment": {},
+      "metaSortKey": 3
+    },
+    {
+      "_id": "req_direct_management",
+      "_type": "request",
+      "parentId": "fld_direct_services",
+      "name": "Management Service - Direct",
+      "description": "Acceso directo al Management Service",
+      "url": "{{ _.management_url }}/orders",
+      "method": "GET",
+      "body": {},
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 1
+    },
+    {
+      "_id": "req_direct_invoice",
+      "_type": "request",
+      "parentId": "fld_direct_services",
+      "name": "Invoice Service - Direct",
+      "description": "Acceso directo al Invoice Service",
+      "url": "{{ _.invoice_url }}/invoices",
+      "method": "GET",
+      "body": {},
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "authentication": {},
+      "metaSortKey": 2
+    }
+  ]
+}
