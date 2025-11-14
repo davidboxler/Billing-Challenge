@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { Invoice } from './entities/invoice.entity';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
-import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { QueryInvoicesDto } from './dto/query-invoices.dto';
 
 @Injectable()
@@ -14,6 +13,15 @@ export class InvoicesService {
   ) {}
 
   async create(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
+    // Idempotency check: if an invoice with the same trackingCode exists, return it
+    const existingInvoice = await this.invoiceRepository.findOne({
+      where: { trackingCode: createInvoiceDto.trackingCode },
+    });
+
+    if (existingInvoice) {
+      return existingInvoice;
+    }
+
     const invoice = this.invoiceRepository.create({
       ...createInvoiceDto,
       issuedDate: new Date(createInvoiceDto.issuedDate),
@@ -22,7 +30,16 @@ export class InvoicesService {
   }
 
   async findAll(queryDto: QueryInvoicesDto) {
-    const { orderId, startDate, endDate, page = 1, limit = 10 } = queryDto;
+    const {
+      orderId,
+      startDate,
+      endDate,
+      search,
+      sortBy = 'createdAt',
+      sortDir = 'DESC',
+      page = 1,
+      limit = 10,
+    } = queryDto;
     const queryBuilder = this.invoiceRepository.createQueryBuilder('invoice');
 
     if (orderId) {
@@ -44,19 +61,28 @@ export class InvoicesService {
       });
     }
 
+    if (search) {
+      queryBuilder.andWhere(
+        '(invoice.trackingCode ILIKE :search OR invoice.author ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
     queryBuilder
-      .orderBy('invoice.createdAt', 'DESC')
+      .orderBy(`invoice.${sortBy}`, sortDir as 'ASC' | 'DESC')
       .skip((page - 1) * limit)
       .take(limit);
 
-    const [invoices, total] = await queryBuilder.getManyAndCount();
+    const [items, total] = await queryBuilder.getManyAndCount();
+
+    const hasNext = page * limit < total;
 
     return {
-      data: invoices,
+      items,
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      hasNext,
     };
   }
 
@@ -66,22 +92,5 @@ export class InvoicesService {
       throw new NotFoundException(`Invoice with ID ${id} not found`);
     }
     return invoice;
-  }
-
-  async update(id: number, updateInvoiceDto: UpdateInvoiceDto): Promise<Invoice> {
-    const invoice = await this.findOne(id);
-
-    const updateData: any = { ...updateInvoiceDto };
-    if (updateInvoiceDto.issuedDate) {
-      updateData.issuedDate = new Date(updateInvoiceDto.issuedDate);
-    }
-
-    Object.assign(invoice, updateData);
-    return await this.invoiceRepository.save(invoice);
-  }
-
-  async remove(id: number): Promise<void> {
-    const invoice = await this.findOne(id);
-    await this.invoiceRepository.remove(invoice);
   }
 }

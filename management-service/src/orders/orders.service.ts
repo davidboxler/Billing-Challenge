@@ -233,6 +233,8 @@ export class OrdersService {
           orderId: order.id,
           amount: 100.0, // Dummy amount for now
           issuedDate: new Date().toISOString(),
+          trackingCode: order.trackingCode,
+          author: 'Management Service',
         };
         return firstValueFrom(
           this.httpService.post(`${invoiceServiceUrl}/invoices`, invoiceData),

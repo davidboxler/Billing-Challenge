@@ -3,9 +3,7 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
-  Delete,
   Query,
   ValidationPipe,
   ParseIntPipe,
@@ -13,7 +11,6 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { InvoicesService } from './invoices.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
-import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { QueryInvoicesDto } from './dto/query-invoices.dto';
 
 @ApiTags('invoices')
@@ -43,27 +40,5 @@ export class InvoicesController {
   @ApiResponse({ status: 404, description: 'Invoice not found' })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.invoicesService.findOne(id);
-  }
-
-  @Patch(':id')
-  @ApiOperation({ summary: 'Update an invoice' })
-  @ApiParam({ name: 'id', description: 'Invoice ID', type: Number })
-  @ApiResponse({ status: 200, description: 'Invoice updated successfully' })
-  @ApiResponse({ status: 404, description: 'Invoice not found' })
-  @ApiResponse({ status: 400, description: 'Invalid input data' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body(ValidationPipe) updateInvoiceDto: UpdateInvoiceDto,
-  ) {
-    return this.invoicesService.update(id, updateInvoiceDto);
-  }
-
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete an invoice' })
-  @ApiParam({ name: 'id', description: 'Invoice ID', type: Number })
-  @ApiResponse({ status: 200, description: 'Invoice deleted successfully' })
-  @ApiResponse({ status: 404, description: 'Invoice not found' })
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.invoicesService.remove(id);
   }
 }

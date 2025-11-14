@@ -40,6 +40,21 @@ export class Invoice {
   issuedDate: Date;
 
   @ApiProperty({
+    description: 'Unique tracking code for the invoice (for idempotency)',
+    example: 'TRK-001',
+  })
+  @Column({ type: 'varchar', length: 255, unique: true })
+  @Index('idx_tracking_code', { unique: true })
+  trackingCode: string;
+
+  @ApiProperty({
+    description: 'Author who created the invoice',
+    example: 'John Doe',
+  })
+  @Column({ type: 'varchar', length: 255 })
+  author: string;
+
+  @ApiProperty({
     description: 'Timestamp when the invoice was created',
     example: '2024-01-15T10:30:00Z',
   })

@@ -1,4 +1,4 @@
-import { IsOptional, IsNumber, IsDateString, Min } from 'class-validator';
+import { IsOptional, IsNumber, IsDateString, IsString, IsIn, IsEnum, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -45,15 +45,46 @@ export class QueryInvoicesDto {
   page?: number = 1;
 
   @ApiPropertyOptional({
-    description: 'Number of items per page',
+    description: 'Number of items per page (max 100)',
     example: 10,
     type: Number,
     minimum: 1,
+    maximum: 100,
     default: 10,
   })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(1)
+  @Max(100)
   limit?: number = 10;
+
+  @ApiPropertyOptional({
+    description: 'Search by trackingCode or author',
+    example: 'TRK-001',
+    type: String,
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Field to sort by',
+    example: 'createdAt',
+    enum: ['createdAt', 'trackingCode', 'author'],
+    default: 'createdAt',
+  })
+  @IsOptional()
+  @IsIn(['createdAt', 'trackingCode', 'author'])
+  sortBy?: string = 'createdAt';
+
+  @ApiPropertyOptional({
+    description: 'Sort direction',
+    example: 'DESC',
+    enum: ['ASC', 'DESC'],
+    default: 'DESC',
+  })
+  @IsOptional()
+  @IsIn(['ASC', 'DESC'])
+  sortDir?: 'ASC' | 'DESC' = 'DESC';
 }
