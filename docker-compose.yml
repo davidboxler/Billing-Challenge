@@ -7,9 +7,9 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: management_db
+      POSTGRES_DB: managementdb
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - management_data:/var/lib/postgresql/data
     networks:
@@ -21,7 +21,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: invoice_db
+      POSTGRES_DB: invoicedb
     ports:
       - "5433:5432"
     volumes:
@@ -41,7 +41,7 @@ services:
       - DB_PORT=5432
       - DB_USER=postgres
       - DB_PASSWORD=postgres
-      - DB_NAME=management_db
+      - DB_NAME=managementdb
       - INVOICE_SERVICE_URL=http://invoice-service:3002
     ports:
       - "3001:3001"
@@ -65,7 +65,7 @@ services:
       - DB_PORT=5432
       - DB_USER=postgres
       - DB_PASSWORD=postgres
-      - DB_NAME=invoice_db
+      - DB_NAME=invoicedb
     ports:
       - "3002:3002"
     depends_on:
