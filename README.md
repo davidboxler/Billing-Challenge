@@ -575,4 +575,4 @@ Este proyecto es privado y confidencial.
 
 ## Contacto
 
-Para preguntas o soporte, contactar al equipo de desarrollo.
+Para preguntas o soporte, contactar a davidboxler47@gmail.com.
