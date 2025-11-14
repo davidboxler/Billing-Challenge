@@ -1,4 +1,4 @@
-import { IsNumber, IsNotEmpty, IsDateString, Min } from 'class-validator';
+import { IsNumber, IsNotEmpty, IsDateString, IsString, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateInvoiceDto {
@@ -30,4 +30,22 @@ export class CreateInvoiceDto {
   @IsDateString()
   @IsNotEmpty()
   issuedDate: string;
+
+  @ApiProperty({
+    description: 'Unique tracking code for the invoice (for idempotency)',
+    example: 'TRK-001',
+    type: String,
+  })
+  @IsString()
+  @IsNotEmpty()
+  trackingCode: string;
+
+  @ApiProperty({
+    description: 'Author who created the invoice',
+    example: 'John Doe',
+    type: String,
+  })
+  @IsString()
+  @IsNotEmpty()
+  author: string;
 }
